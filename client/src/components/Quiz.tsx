@@ -1,66 +1,117 @@
-import { useEffect, useState } from "react";
-import { getQuiz } from "../api/client";
+import { useState } from "react"
+import { vocabulary } from "../data/vocabulary"
+
+type Lang = "en" | "fr" | "de"
 
 export default function Quiz() {
-  const [quiz, setQuiz] = useState<any>(null);
-  const [score, setScore] = useState(0);
-  const [feedback, setFeedback] = useState<null | "correct" | "wrong">(null);
+  const [lang, setLang] = useState<Lang>("en")
+  const [index, setIndex] = useState(0)
+  const [score, setScore] = useState(0)
 
-  const loadQuiz = () => {
-    getQuiz("english").then(setQuiz);
-  };
+  const current = vocabulary[lang][index]
 
-  useEffect(() => {
-    loadQuiz();
-  }, []);
-
-  const answer = (option: string) => {
-    if (option === quiz.correct) {
-      setScore((s) => s + 1);
-      setFeedback("correct");
-    } else {
-      setFeedback("wrong");
-    }
-
-    setTimeout(() => {
-      setFeedback(null);
-      loadQuiz();
-    }, 800);
-  };
-
-  if (!quiz) return <p>Loading...</p>;
+  const answer = (opt: string) => {
+    if (opt === current.answer) setScore((s) => s + 1)
+    setIndex((i) => (i + 1) % vocabulary[lang].length)
+  }
 
   return (
-    <div style={{ padding: "20px" }}>
-      <h2>Quiz</h2>
-      <h3>{quiz.question}</h3>
+    <div style={styles.container}>
+      <h1 style={styles.title}>Language Quiz 🌍</h1>
 
-      {quiz.options.map((opt: string, i: number) => (
-        <button
-          key={i}
-          onClick={() => answer(opt)}
-          style={{
-            display: "block",
-            margin: "8px 0",
-            padding: "10px",
-            width: "100%",
-            background:
-              feedback &&
-              ((opt === quiz.correct && feedback === "correct") ||
-                (opt !== quiz.correct && feedback === "wrong"))
-                ? opt === quiz.correct
-                  ? "lightgreen"
-                  : "salmon"
-                : "white",
-            border: "1px solid #ccc",
-            borderRadius: "8px",
+      <div style={styles.card}>
+        <select
+          style={styles.select}
+          value={lang}
+          onChange={(e) => {
+            setLang(e.target.value as Lang)
+            setIndex(0)
+            setScore(0)
           }}
         >
-          {opt}
-        </button>
-      ))}
+          <option value="en">English</option>
+          <option value="fr">French</option>
+          <option value="de">German</option>
+        </select>
 
-      <p>Puntuación: {score}</p>
+        <h2 style={styles.question}>{current.question}</h2>
+
+        <div style={styles.options}>
+          {current.options.map((opt, i) => (
+            <button
+              key={i}
+              onClick={() => answer(opt)}
+              style={styles.button}
+            >
+              {opt}
+            </button>
+          ))}
+        </div>
+
+        <div style={styles.score}>
+          Score: <strong>{score}</strong>
+        </div>
+      </div>
     </div>
-  );
+  )
+}
+
+const styles: Record<string, React.CSSProperties> = {
+  container: {
+    minHeight: "100vh",
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "center",
+    alignItems: "center",
+    background: "linear-gradient(135deg, #f5f7ff, #e8ecff)",
+    fontFamily: "system-ui",
+  },
+
+  title: {
+    fontSize: 32,
+    marginBottom: 20,
+    color: "#1f1f2e",
+  },
+
+  card: {
+    background: "white",
+    padding: 24,
+    borderRadius: 16,
+    width: 360,
+    boxShadow: "0 10px 30px rgba(0,0,0,0.1)",
+    textAlign: "center",
+  },
+
+  select: {
+    width: "100%",
+    padding: 10,
+    marginBottom: 16,
+    borderRadius: 8,
+    border: "1px solid #ddd",
+  },
+
+  question: {
+    fontSize: 20,
+    marginBottom: 16,
+  },
+
+  options: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 10,
+  },
+
+  button: {
+    padding: 12,
+    borderRadius: 10,
+    border: "1px solid #ddd",
+    background: "#fff",
+    cursor: "pointer",
+    transition: "0.2s",
+  },
+
+  score: {
+    marginTop: 16,
+    fontSize: 18,
+  },
 }
