@@ -2,7 +2,7 @@ import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyArGPisF-z1pQ1OwkbH3ayrJg6JnEo7Ex4",
+  apiKey: import.meta.env.VITE_API_KEY,
   authDomain: "language-travel-planner-eafbc.firebaseapp.com",
   projectId: "language-travel-planner-eafbc",
   storageBucket: "language-travel-planner-eafbc.firebasestorage.app",
