@@ -11,6 +11,7 @@
     "@types/react-router-dom": "^5.3.3",
     "nodemon": "^3.1.14",
     "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0",
     "typescript": "^6.0.3"
   },
   "name": "language-travel-planner",
@@ -21,7 +22,7 @@
     "doc": "docs"
   },
   "scripts": {
-  "dev": "ts-node-dev --respawn --transpile-only --project ./tsconfig.json src/server.ts"
+    "dev": "ts-node-dev --respawn --transpile-only --project ./tsconfig.json src/server.ts"
   },
   "keywords": [],
   "author": "",
