@@ -1,22 +1,22 @@
+import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
 import Quiz from "./components/Quiz";
 import PhrasesPage from "./pages/PhrasesPage";
 import Login from "./pages/Login";
-import { useState } from "react";
 
 export default function App() {
-  const [page, setPage] = useState<"quiz" | "phrases" | "login">("login");
-
   return (
-    <div>
+    <BrowserRouter>
       <nav style={{ display: "flex", gap: 10, padding: 10 }}>
-        <button onClick={() => setPage("login")}>Login</button>
-        <button onClick={() => setPage("quiz")}>Quiz</button>
-        <button onClick={() => setPage("phrases")}>Travel Phrases</button>
+        <Link to="/">Login</Link>
+        <Link to="/quiz">Quiz</Link>
+        <Link to="/phrases">Travel Phrases</Link>
       </nav>
 
-      {page === "login" && <Login />}
-      {page === "quiz" && <Quiz />}
-      {page === "phrases" && <PhrasesPage />}
-    </div>
+      <Routes>
+        <Route path="/" element={<Login />} />
+        <Route path="/quiz" element={<Quiz />} />
+        <Route path="/phrases" element={<PhrasesPage />} />
+      </Routes>
+    </BrowserRouter>
   );
 }

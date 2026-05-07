@@ -1,7 +1,5 @@
-import Login from "./pages/Login";
 import { useState } from "react";
 import { login, register } from "../auth";
-
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

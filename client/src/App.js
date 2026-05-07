@@ -1,9 +1,8 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
 import Quiz from "./components/Quiz";
 import PhrasesPage from "./pages/PhrasesPage";
 import Login from "./pages/Login";
-import { useState } from "react";
 export default function App() {
-    const [page, setPage] = useState("login");
-    return (_jsxs("div", { children: [_jsxs("nav", { style: { display: "flex", gap: 10, padding: 10 }, children: [_jsx("button", { onClick: () => setPage("login"), children: "Login" }), _jsx("button", { onClick: () => setPage("quiz"), children: "Quiz" }), _jsx("button", { onClick: () => setPage("phrases"), children: "Travel Phrases" })] }), page === "login" && _jsx(Login, {}), page === "quiz" && _jsx(Quiz, {}), page === "phrases" && _jsx(PhrasesPage, {})] }));
+    return (_jsxs(BrowserRouter, { children: [_jsxs("nav", { style: { display: "flex", gap: 10, padding: 10 }, children: [_jsx(Link, { to: "/", children: "Login" }), _jsx(Link, { to: "/quiz", children: "Quiz" }), _jsx(Link, { to: "/phrases", children: "Travel Phrases" })] }), _jsxs(Routes, { children: [_jsx(Route, { path: "/", element: _jsx(Login, {}) }), _jsx(Route, { path: "/quiz", element: _jsx(Quiz, {}) }), _jsx(Route, { path: "/phrases", element: _jsx(PhrasesPage, {}) })] })] }));
 }
