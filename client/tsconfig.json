@@ -5,11 +5,16 @@
     "lib": ["DOM", "DOM.Iterable", "ES2020"],
     "module": "ESNext",
     "skipLibCheck": true,
+
     "moduleResolution": "Bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
+    "noEmit": true,
+
     "jsx": "react-jsx",
-    "strict": false
+    "strict": false,
+
+    "types": ["vite/client"]
   },
   "include": ["src", "vite-env.d.ts"]
 }
