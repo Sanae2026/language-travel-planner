@@ -3,48 +3,41 @@ import { useState } from "react"
 
 type Category = keyof typeof travelPhrases
 
-const LANG_CONFIG: Record<string, { code: string; label: string; flag: string }> = {
-  en: { code: "en-US", label: "English", flag: "🇬🇧" },
-  es: { code: "es-ES", label: "Español", flag: "🇪🇸" },
-  fr: { code: "fr-FR", label: "Français", flag: "🇫🇷" },
-  de: { code: "de-DE", label: "Deutsch", flag: "🇩🇪" },
+const LANG_CONFIG: Record<string, { label: string; flag: string }> = {
+  en: { label: "English", flag: "🇬🇧" },
+  es: { label: "Español", flag: "🇪🇸" },
+  fr: { label: "Français", flag: "🇫🇷" },
+  de: { label: "Deutsch", flag: "🇩🇪" },
 }
 
-function SpeakButton({ text, lang }: { text: string; lang: string }) {
-  const [speaking, setSpeaking] = useState(false)
+function SpeakButton({ category, index, lang }: { category: string; index: number; lang: string }) {
+  const [playing, setPlaying] = useState(false)
 
-  const speak = () => {
-    if (speaking) {
-      window.speechSynthesis.cancel()
-      setSpeaking(false)
-      return
-    }
-
-    const utterance = new SpeechSynthesisUtterance(text)
-    utterance.lang = LANG_CONFIG[lang].code
-    utterance.rate = 0.9
-    utterance.onstart = () => setSpeaking(true)
-    utterance.onend = () => setSpeaking(false)
-    utterance.onerror = () => setSpeaking(false)
-    window.speechSynthesis.speak(utterance)
+  const play = () => {
+    const src = `/audio/${category}_${index + 1}_${lang}.mp3`
+    const audio = new Audio(src)
+    setPlaying(true)
+    audio.play()
+    audio.onended = () => setPlaying(false)
+    audio.onerror = () => setPlaying(false)
   }
 
   return (
     <button
-      onClick={speak}
+      onClick={play}
       title={`Escuchar en ${LANG_CONFIG[lang].label}`}
       style={{
-        background: speaking ? "#aa3bff" : "transparent",
-        border: `1px solid ${speaking ? "#aa3bff" : "#ddd"}`,
+        background: playing ? "#aa3bff" : "transparent",
+        border: `1px solid ${playing ? "#aa3bff" : "#ddd"}`,
         borderRadius: 6,
         padding: "2px 8px",
         cursor: "pointer",
         fontSize: 14,
         transition: "all 0.2s",
-        color: speaking ? "#fff" : "#666",
+        color: playing ? "#fff" : "#666",
       }}
     >
-      {speaking ? "⏹" : "🔊"}
+      {playing ? "⏹" : "🔊"}
     </button>
   )
 }
@@ -109,7 +102,7 @@ export default function PhrasesPage() {
               >
                 <span style={{ fontSize: 18, width: 28 }}>{LANG_CONFIG[lang as string].flag}</span>
                 <span style={{ flex: 1, fontSize: 15 }}>{p[lang]}</span>
-                <SpeakButton text={p[lang] as string} lang={lang as string} />
+                <SpeakButton category={category} index={i} lang={lang as string} />
               </div>
             ))}
           </div>
