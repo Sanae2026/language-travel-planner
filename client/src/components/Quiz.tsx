@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react"
+import { useState, useMemo } from "react"
 import { phrases, LangKey } from "../data/vocabulary"
 
 const LANG_LABELS: Record<LangKey, string> = {
@@ -19,118 +19,225 @@ function shuffle<T>(arr: T[]): T[] {
   return [...arr].sort(() => Math.random() - 0.5)
 }
 
-function buildQuestion(nativeLang: LangKey, targetLang: LangKey, index: number) {
-  const shuffled = shuffle(phrases)
-  const correct = shuffled[index % shuffled.length]
-
-  // Get 3 wrong options from other phrases
-  const wrongs = shuffle(shuffled.filter((_, i) => i !== index % shuffled.length))
-    .slice(0, 3)
-    .map((p) => p[targetLang])
-
-  const options = shuffle([correct[targetLang], ...wrongs])
-
-  return {
-    question: correct[nativeLang],
-    answer: correct[targetLang],
-    options,
-    category: correct.category,
-  }
+function buildQuiz(nativeLang: LangKey, targetLang: LangKey) {
+  const selected = shuffle(phrases).slice(0, 10)
+  return selected.map((correct) => {
+    const wrongs = shuffle(phrases.filter((p) => p[targetLang] !== correct[targetLang]))
+      .slice(0, 3)
+      .map((p) => p[targetLang])
+    return {
+      question: correct[nativeLang],
+      answer: correct[targetLang],
+      options: shuffle([correct[targetLang], ...wrongs]),
+      category: correct.category,
+    }
+  })
 }
+
+type Question = ReturnType<typeof buildQuiz>[0]
 
 export default function Quiz() {
   const [nativeLang, setNativeLang] = useState<LangKey>("en")
   const [targetLang, setTargetLang] = useState<LangKey>("es")
+  const [started, setStarted] = useState(false)
+  const [questions, setQuestions] = useState<Question[]>([])
   const [index, setIndex] = useState(0)
   const [score, setScore] = useState(0)
-  const [total, setTotal] = useState(0)
   const [selected, setSelected] = useState<string | null>(null)
-  const [shuffledPhrases] = useState(() => shuffle(phrases))
+  const [finished, setFinished] = useState(false)
+  const [answers, setAnswers] = useState<{ correct: boolean; answer: string; given: string }[]>([])
 
-  const current = buildQuestion(nativeLang, targetLang, index)
+  const start = () => {
+    setQuestions(buildQuiz(nativeLang, targetLang))
+    setIndex(0)
+    setScore(0)
+    setSelected(null)
+    setFinished(false)
+    setAnswers([])
+    setStarted(true)
+  }
 
   const answer = (opt: string) => {
     if (selected) return
     setSelected(opt)
-    setTotal((t) => t + 1)
-    if (opt === current.answer) setScore((s) => s + 1)
+    const correct = opt === questions[index].answer
+    if (correct) setScore((s) => s + 1)
+    setAnswers((a) => [...a, { correct, answer: questions[index].answer, given: opt }])
   }
 
   const next = () => {
-    setSelected(null)
-    setIndex((i) => i + 1)
-  }
-
-  const reset = (nl: LangKey, tl: LangKey) => {
-    setNativeLang(nl)
-    setTargetLang(tl)
-    setIndex(0)
-    setScore(0)
-    setTotal(0)
-    setSelected(null)
+    if (index + 1 >= questions.length) {
+      setFinished(true)
+    } else {
+      setIndex((i) => i + 1)
+      setSelected(null)
+    }
   }
 
   const getButtonStyle = (opt: string): React.CSSProperties => {
     if (!selected) return styles.button
-    if (opt === current.answer) return { ...styles.button, ...styles.correct }
+    if (opt === questions[index].answer) return { ...styles.button, ...styles.correct }
     if (opt === selected) return { ...styles.button, ...styles.wrong }
-    return { ...styles.button, opacity: 0.5 }
+    return { ...styles.button, opacity: 0.4 }
   }
 
+  const getResultEmoji = () => {
+    const pct = score / 10
+    if (pct === 1) return "🏆"
+    if (pct >= 0.8) return "🎉"
+    if (pct >= 0.6) return "👍"
+    if (pct >= 0.4) return "📚"
+    return "💪"
+  }
+
+  const getResultMsg = () => {
+    const pct = score / 10
+    if (pct === 1) return "Perfect score!"
+    if (pct >= 0.8) return "Great job!"
+    if (pct >= 0.6) return "Good effort!"
+    if (pct >= 0.4) return "Keep practicing!"
+    return "Don't give up!"
+  }
+
+  // START SCREEN
+  if (!started) {
+    return (
+      <div style={styles.container}>
+        <h1 style={styles.title}>Language Quiz 🌍</h1>
+        <div style={styles.card}>
+          <p style={{ color: "var(--text)", marginBottom: 24, fontSize: 15 }}>
+            Choose your languages and test your knowledge with 10 questions!
+          </p>
+
+          <div style={styles.langRow}>
+            <div style={styles.langGroup}>
+              <label style={styles.label}>I speak</label>
+              <select
+                style={styles.select}
+                value={nativeLang}
+                onChange={(e) => {
+                  const nl = e.target.value as LangKey
+                  setNativeLang(nl)
+                  setTargetLang(OTHER_LANGS[nl][0])
+                }}
+              >
+                {(Object.keys(LANG_LABELS) as LangKey[]).map((l) => (
+                  <option key={l} value={l}>{LANG_LABELS[l]}</option>
+                ))}
+              </select>
+            </div>
+            <div style={{ fontSize: 24, marginTop: 16 }}>→</div>
+            <div style={styles.langGroup}>
+              <label style={styles.label}>I'm learning</label>
+              <select
+                style={styles.select}
+                value={targetLang}
+                onChange={(e) => setTargetLang(e.target.value as LangKey)}
+              >
+                {OTHER_LANGS[nativeLang].map((l) => (
+                  <option key={l} value={l}>{LANG_LABELS[l]}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <button onClick={start} style={styles.startBtn}>
+            Start Quiz →
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  // RESULTS SCREEN
+  if (finished) {
+    return (
+      <div style={styles.container}>
+        <h1 style={styles.title}>Results</h1>
+        <div style={{ ...styles.card, textAlign: "center" }}>
+          <div style={{ fontSize: 64, marginBottom: 8 }}>{getResultEmoji()}</div>
+          <div style={{ fontSize: 28, fontWeight: 700, color: "var(--text-h)", marginBottom: 4 }}>
+            {score} / 10
+          </div>
+          <div style={{ fontSize: 16, color: "var(--text)", marginBottom: 24 }}>
+            {getResultMsg()} ({Math.round((score / 10) * 100)}%)
+          </div>
+
+          {/* Progress bar */}
+          <div style={{ background: "var(--border)", borderRadius: 8, height: 10, marginBottom: 24 }}>
+            <div style={{
+              background: score >= 8 ? "#22c55e" : score >= 5 ? "#2563eb" : "#ef4444",
+              width: `${(score / 10) * 100}%`,
+              height: "100%",
+              borderRadius: 8,
+              transition: "width 0.5s",
+            }} />
+          </div>
+
+          {/* Answer review */}
+          <div style={{ textAlign: "left", marginBottom: 24 }}>
+            {questions.map((q, i) => (
+              <div key={i} style={{
+                display: "flex",
+                alignItems: "flex-start",
+                gap: 10,
+                padding: "8px 0",
+                borderBottom: "1px solid var(--border)",
+                fontSize: 14,
+              }}>
+                <span>{answers[i]?.correct ? "✅" : "❌"}</span>
+                <div>
+                  <div style={{ color: "var(--text-h)", fontWeight: 500 }}>{q.question}</div>
+                  {!answers[i]?.correct && (
+                    <div style={{ color: "#22c55e", fontSize: 13 }}>→ {q.answer}</div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+            <button onClick={start} style={styles.startBtn}>
+              Try Again
+            </button>
+            <button onClick={() => setStarted(false)} style={{ ...styles.startBtn, background: "var(--border)", color: "var(--text-h)" }}>
+              Change Language
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // QUIZ SCREEN
+  const current = questions[index]
   return (
     <div style={styles.container}>
       <h1 style={styles.title}>Language Quiz 🌍</h1>
-
-      {/* Language selectors */}
-      <div style={styles.langRow}>
-        <div style={styles.langGroup}>
-          <label style={styles.label}>I speak</label>
-          <select
-            style={styles.select}
-            value={nativeLang}
-            onChange={(e) => {
-              const nl = e.target.value as LangKey
-              const tl = OTHER_LANGS[nl][0]
-              reset(nl, tl)
-            }}
-          >
-            {(Object.keys(LANG_LABELS) as LangKey[]).map((l) => (
-              <option key={l} value={l}>{LANG_LABELS[l]}</option>
-            ))}
-          </select>
-        </div>
-
-        <div style={{ fontSize: 24 }}>→</div>
-
-        <div style={styles.langGroup}>
-          <label style={styles.label}>I'm learning</label>
-          <select
-            style={styles.select}
-            value={targetLang}
-            onChange={(e) => reset(nativeLang, e.target.value as LangKey)}
-          >
-            {OTHER_LANGS[nativeLang].map((l) => (
-              <option key={l} value={l}>{LANG_LABELS[l]}</option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      {/* Card */}
       <div style={styles.card}>
+
+        {/* Progress */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+          <span style={{ fontSize: 13, color: "var(--text)" }}>Question {index + 1} / 10</span>
+          <span style={{ fontSize: 13, color: "var(--text)" }}>Score: {score}</span>
+        </div>
+        <div style={{ background: "var(--border)", borderRadius: 8, height: 6, marginBottom: 20 }}>
+          <div style={{
+            background: "#2563eb",
+            width: `${((index + 1) / 10) * 100}%`,
+            height: "100%",
+            borderRadius: 8,
+            transition: "width 0.3s",
+          }} />
+        </div>
+
         <span style={styles.category}>{current.category}</span>
-        <p style={styles.instruction}>
-          Translate to {LANG_LABELS[targetLang]}:
-        </p>
+        <p style={styles.instruction}>Translate to {LANG_LABELS[targetLang]}:</p>
         <h2 style={styles.question}>{current.question}</h2>
 
         <div style={styles.options}>
           {current.options.map((opt, i) => (
-            <button
-              key={i}
-              onClick={() => answer(opt)}
-              style={getButtonStyle(opt)}
-            >
+            <button key={i} onClick={() => answer(opt)} style={getButtonStyle(opt)}>
               {opt}
             </button>
           ))}
@@ -138,21 +245,12 @@ export default function Quiz() {
 
         {selected && (
           <div style={styles.feedback}>
-            {selected === current.answer ? "✅ Correct!" : `❌ The answer was: ${current.answer}`}
+            <span>{selected === current.answer ? "✅ Correct!" : `❌ ${current.answer}`}</span>
             <button onClick={next} style={styles.nextBtn}>
-              Next →
+              {index + 1 >= questions.length ? "See Results →" : "Next →"}
             </button>
           </div>
         )}
-
-        <div style={styles.score}>
-          Score: <strong>{score}</strong> / {total}
-          {total > 0 && (
-            <span style={{ marginLeft: 8, color: "#888", fontSize: 14 }}>
-              ({Math.round((score / total) * 100)}%)
-            </span>
-          )}
-        </div>
       </div>
     </div>
   )
@@ -166,7 +264,6 @@ const styles: Record<string, React.CSSProperties> = {
     justifyContent: "center",
     alignItems: "center",
     padding: "20px",
-    fontFamily: "system-ui",
   },
   title: {
     fontSize: 32,
@@ -201,19 +298,18 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: "pointer",
   },
   card: {
-    background: "var(--bg, #fff)",
+    background: "var(--bg-card, #fff)",
     border: "1px solid var(--border, #ddd)",
     padding: 28,
-    borderRadius: 16,
-    width: 380,
+    borderRadius: 20,
+    width: 420,
     maxWidth: "100%",
     boxShadow: "var(--shadow)",
-    textAlign: "center",
   },
   category: {
     fontSize: 12,
-    background: "var(--accent-bg, #f0e8ff)",
-    color: "var(--accent, #aa3bff)",
+    background: "rgba(37,99,235,0.1)",
+    color: "#2563eb",
     padding: "2px 10px",
     borderRadius: 20,
     display: "inline-block",
@@ -228,6 +324,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 22,
     marginBottom: 20,
     color: "var(--text-h)",
+    textAlign: "center",
   },
   options: {
     display: "flex",
@@ -266,16 +363,23 @@ const styles: Record<string, React.CSSProperties> = {
   nextBtn: {
     padding: "8px 20px",
     borderRadius: 8,
-    background: "#aa3bff",
+    background: "#2563eb",
     color: "#fff",
     border: "none",
     cursor: "pointer",
     fontSize: 15,
     fontWeight: 600,
   },
-  score: {
-    marginTop: 20,
-    fontSize: 18,
-    color: "var(--text)",
+  startBtn: {
+    padding: "12px 28px",
+    borderRadius: 12,
+    background: "#2563eb",
+    color: "#fff",
+    border: "none",
+    cursor: "pointer",
+    fontSize: 16,
+    fontWeight: 700,
+    width: "100%",
+    marginTop: 8,
   },
 }
