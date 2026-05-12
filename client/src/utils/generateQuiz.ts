@@ -1,18 +1,21 @@
-import { vocabulary } from "../data/vocabulary"
+import { phrases, LangKey } from "../data/vocabulary"
 
-export function generateQuiz(language: "en" | "fr" | "de") {
-
-  const words = vocabulary[language]
-
-  return words
+export function generateQuiz(nativeLang: LangKey, targetLang: LangKey) {
+  return phrases
     .sort(() => Math.random() - 0.5)
     .slice(0, 10)
-    .map((item) => {
+    .map((phrase) => {
+      const wrongs = phrases
+        .filter((p) => p[targetLang] !== phrase[targetLang])
+        .sort(() => Math.random() - 0.5)
+        .slice(0, 3)
+        .map((p) => p[targetLang])
 
       return {
-        question: item.question,
-        correct: item.answer,
-        options: item.options.sort(() => Math.random() - 0.5)
+        question: phrase[nativeLang],
+        correct: phrase[targetLang],
+        options: [phrase[targetLang], ...wrongs].sort(() => Math.random() - 0.5),
+        category: phrase.category,
       }
     })
 }
