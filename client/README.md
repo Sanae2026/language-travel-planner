@@ -18,9 +18,8 @@ Voy a seguir mejorándolo y experimentando con él. Tengo ganas de mejorar el qu
 
 - Frases de viaje organizadas por categoría: aeropuerto, hotel, restaurante y emergencias
 - Pronunciación en audio de cada frase en los 4 idiomas
-- Quiz de 10 preguntas para practicar vocabulario, eligiendo el idioma nativo y el que quieres aprender
+- Quiz para practicar vocabulario, eligiendo el idioma nativo para aprender español
 - Login con Firebase
-- Modo oscuro automático
 
 ## Lo que quiero mejorar
 
@@ -44,23 +43,23 @@ Voy a seguir mejorándolo y experimentando con él. Tengo ganas de mejorar el qu
 
 ## Cómo se generaron los audios
 
-Los audios se generaron con un script de Python usando la librería gTTS (Google Text-to-Speech), que es gratuita y funciona bastante bien para esto.
+## Cómo se generaron los audios
 
-Instalación:
+Los audios se generaron con un script de Python usando la librería gTTS (Google Text-to-Speech), que es gratuita.
+
+Primero instalé Python desde python.org y luego instalé la librería:
 
 ```bash
 py -m pip install gtts
 ```
 
-Ejecución:
+Creé el script generate_audio.py en la raíz del proyecto con todas las frases y ejecuté:
 
 ```bash
 py generate_audio.py
 ```
 
-El script generó 32 archivos MP3 cubriendo todas las frases en las 4 categorías y los 4 idiomas. Los guarda en client/public/audio/ con nombres como airport_1_es.mp3.
-
----
+El script recorre cada frase, categoría e idioma automáticamente y genera un archivo MP3 por cada combinación. En total generó 32 archivos MP3 guardados en client/public/audio/ con nombres como airport_1_es.mp3.
 
 ## Ejecutar en local
 
